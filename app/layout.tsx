@@ -1,5 +1,5 @@
 import type React from "react"
-// <CHANGE> Updated metadata for Financial Risk Simulator
+// Updated metadata for Financial Risk Simulator
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
@@ -13,23 +13,6 @@ export const metadata: Metadata = {
   description:
     "Simulate asset price movements using Monte Carlo methods to analyze financial risk and calculate Value at Risk (VaR)",
   generator: "v0.app",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
 }
 
 export default function RootLayout({

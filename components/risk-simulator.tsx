@@ -46,21 +46,15 @@ export function RiskSimulator() {
         body: JSON.stringify(params),
       })
 
-      console.log("[v0] Response status:", response.status)
-      console.log("[v0] Response headers:", response.headers)
-
       if (!response.ok) {
         const text = await response.text()
-        console.log("[v0] Response body:", text)
         throw new Error(`HTTP ${response.status}: ${text}`)
       }
 
       const data = await response.json()
-      console.log("[v0] Simulation data received:", data)
       setSimData(data)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Unknown error"
-      console.log("[v0] Error caught:", errorMsg)
       setError(errorMsg)
     } finally {
       setLoading(false)

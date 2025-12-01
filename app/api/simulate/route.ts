@@ -90,19 +90,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    console.log("[v0] Simulation request received:", body)
-
     // Validate input
     if (!body.current_price || !body.volatility || !body.days || !body.num_simulations) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
     }
 
     const result = runMonteCarlo(body.current_price, body.volatility, body.days, body.num_simulations)
-
-    console.log("[v0] Simulation completed successfully")
     return NextResponse.json(result)
   } catch (error) {
-    console.error("[v0] API Error:", error)
     return NextResponse.json({ error: error instanceof Error ? error.message : "Simulation failed" }, { status: 500 })
   }
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200 })
 }
