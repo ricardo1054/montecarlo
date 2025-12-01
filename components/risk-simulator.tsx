@@ -49,16 +49,17 @@ export function RiskSimulator() {
       })
 
       if (!response.ok) {
+        const clonedResponse = response.clone()
         let errorMessage = `HTTP ${response.status}`
         try {
           const errorData = await response.json()
-          if (errorData.error) {
-            errorMessage = `${response.status}: ${errorData.error}`
-          }
+          errorMessage = errorData.error || `HTTP ${response.status}`
         } catch {
-          const text = await response.text()
-          if (text) {
-            errorMessage = `${response.status}: ${text}`
+          try {
+            const text = await clonedResponse.text()
+            errorMessage = text || `HTTP ${response.status}`
+          } catch {
+            errorMessage = `HTTP ${response.status}`
           }
         }
         throw new Error(errorMessage)
