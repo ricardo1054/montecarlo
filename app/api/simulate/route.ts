@@ -1,89 +1,90 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 // Monte Carlo Simulation using Geometric Brownian Motion
-function runMonteCarlo(current_price: number, volatility: number, days: number, num_simulations: number) {
-  const dt = 1 / 252 // Trading days per year
-  const drift = 0.05 // Expected annual return (5%)
-  const sqrt_dt = Math.sqrt(dt)
-
-  const paths: number[][] = []
-  const final_prices: number[] = []
-
-  for (let sim = 0; sim < num_simulations; sim++) {
-    const path: number[] = [current_price]
-    let current = current_price
-
-    for (let day = 0; day < days; day++) {
-      // Geometric Brownian Motion: dS = μ*S*dt + σ*S*dW
-      const random_normal = boxMullerRandom()
-      const drift_component = drift * current * dt
-      const volatility_component = (volatility / 100) * current * sqrt_dt * random_normal
-      current = current + drift_component + volatility_component
-      current = Math.max(current, 0) // Prevent negative prices
-      path.push(current)
-    }
-
-    paths.push(path)
-    final_prices.push(current)
-  }
-
-  const mean_final_price = final_prices.reduce((a, b) => a + b) / final_prices.length
-  const variance =
-    final_prices.reduce((sum, price) => sum + Math.pow(price - mean_final_price, 2), 0) / final_prices.length
-  const std_dev = Math.sqrt(variance)
-
-  const sorted_prices = [...final_prices].sort((a, b) => a - b)
-  const percentile_5 = sorted_prices[Math.floor((5 / 100) * num_simulations)]
-  const percentile_95 = sorted_prices[Math.floor((95 / 100) * num_simulations)]
-
-  const var_95_price = percentile_5
-  const var_95_loss = current_price - var_95_price
-  const var_95_pct = (var_95_loss / current_price) * 100
-
-  const mean_path: number[] = []
-  const percentile_5_path: number[] = []
-  const percentile_95_path: number[] = []
-
-  for (let day = 0; day <= days; day++) {
-    const day_prices = paths.map((p) => p[day])
-    const day_mean = day_prices.reduce((a, b) => a + b) / day_prices.length
-    const day_sorted = [...day_prices].sort((a, b) => a - b)
-    const day_p5 = day_sorted[Math.floor((5 / 100) * num_simulations)]
-    const day_p95 = day_sorted[Math.floor((95 / 100) * num_simulations)]
-
-    mean_path.push(day_mean)
-    percentile_5_path.push(day_p5)
-    percentile_95_path.push(day_p95)
-  }
-
-  const expected_return = ((mean_final_price - current_price) / current_price) * 100
-
-  return {
-    paths,
-    mean_path,
-    percentile_5: percentile_5_path,
-    percentile_95: percentile_95_path,
-    final_prices,
-    statistics: {
-      initial_price: current_price,
-      mean_final_price: Math.round(mean_final_price * 100) / 100,
-      std_dev: Math.round(std_dev * 100) / 100,
-      min_price: Math.round(Math.min(...final_prices) * 100) / 100,
-      max_price: Math.round(Math.max(...final_prices) * 100) / 100,
-      var_95_price: Math.round(var_95_price * 100) / 100,
-      var_95_loss: Math.round(var_95_loss * 100) / 100,
-      var_95_pct: Math.round(var_95_pct * 100) / 100,
-      expected_return: Math.round(expected_return * 100) / 100,
-    },
-  }
-}
-
-// Box-Muller transform for generating normal distribution random numbers
 function boxMullerRandom(): number {
   const u1 = Math.random()
   const u2 = Math.random()
   const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
   return z0
+}
+
+function runMonteCarlo(currentPrice: number, volatility: number, days: number, numSimulations: number) {
+  const dt = 1 / 252 // Trading days per year
+  const drift = 0.05 // Expected annual return (5%)
+  const sqrtDt = Math.sqrt(dt)
+
+  const paths: number[][] = []
+  const finalPrices: number[] = []
+
+  // Generate Monte Carlo paths
+  for (let sim = 0; sim < numSimulations; sim++) {
+    const path: number[] = [currentPrice]
+    let current = currentPrice
+
+    for (let day = 0; day < days; day++) {
+      // Geometric Brownian Motion: dS = μ*S*dt + σ*S*dW
+      const randomNormal = boxMullerRandom()
+      const driftComponent = drift * current * dt
+      const volatilityComponent = (volatility / 100) * current * sqrtDt * randomNormal
+      current = current + driftComponent + volatilityComponent
+      current = Math.max(current, 0) // Prevent negative prices
+      path.push(current)
+    }
+
+    paths.push(path)
+    finalPrices.push(current)
+  }
+
+  // Calculate statistics
+  const meanFinalPrice = finalPrices.reduce((a, b) => a + b) / finalPrices.length
+  const variance = finalPrices.reduce((sum, price) => sum + Math.pow(price - meanFinalPrice, 2), 0) / finalPrices.length
+  const stdDev = Math.sqrt(variance)
+
+  const sortedPrices = [...finalPrices].sort((a, b) => a - b)
+  const percentile5 = sortedPrices[Math.floor((5 / 100) * numSimulations)]
+  const percentile95 = sortedPrices[Math.floor((95 / 100) * numSimulations)]
+
+  const var95Price = percentile5
+  const var95Loss = currentPrice - var95Price
+  const var95Pct = (var95Loss / currentPrice) * 100
+
+  // Calculate paths for mean and percentiles
+  const meanPath: number[] = []
+  const percentile5Path: number[] = []
+  const percentile95Path: number[] = []
+
+  for (let day = 0; day <= days; day++) {
+    const dayPrices = paths.map((p) => p[day])
+    const dayMean = dayPrices.reduce((a, b) => a + b) / dayPrices.length
+    const daySorted = [...dayPrices].sort((a, b) => a - b)
+    const dayP5 = daySorted[Math.floor((5 / 100) * numSimulations)]
+    const dayP95 = daySorted[Math.floor((95 / 100) * numSimulations)]
+
+    meanPath.push(dayMean)
+    percentile5Path.push(dayP5)
+    percentile95Path.push(dayP95)
+  }
+
+  const expectedReturn = ((meanFinalPrice - currentPrice) / currentPrice) * 100
+
+  return {
+    paths,
+    mean_path: meanPath,
+    percentile_5: percentile5Path,
+    percentile_95: percentile95Path,
+    final_prices: finalPrices,
+    statistics: {
+      initial_price: currentPrice,
+      mean_final_price: Math.round(meanFinalPrice * 100) / 100,
+      std_dev: Math.round(stdDev * 100) / 100,
+      min_price: Math.round(Math.min(...finalPrices) * 100) / 100,
+      max_price: Math.round(Math.max(...finalPrices) * 100) / 100,
+      var_95_price: Math.round(var95Price * 100) / 100,
+      var_95_loss: Math.round(var95Loss * 100) / 100,
+      var_95_pct: Math.round(var95Pct * 100) / 100,
+      expected_return: Math.round(expectedReturn * 100) / 100,
+    },
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -96,9 +97,10 @@ export async function POST(request: NextRequest) {
     }
 
     const result = runMonteCarlo(body.current_price, body.volatility, body.days, body.num_simulations)
-    return NextResponse.json(result)
+    return NextResponse.json(result, { status: 200 })
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Simulation failed" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Simulation failed"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
