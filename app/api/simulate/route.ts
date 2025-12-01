@@ -89,21 +89,52 @@ function runMonteCarlo(currentPrice: number, volatility: number, days: number, n
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get("content-type")
+    if (!contentType?.includes("application/json")) {
+      return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 })
+    }
+
     const body = await request.json()
 
-    // Validate input
-    if (!body.current_price || !body.volatility || !body.days || !body.num_simulations) {
-      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
+    if (!body.current_price || body.current_price <= 0) {
+      return NextResponse.json({ error: "current_price is required and must be > 0" }, { status: 400 })
+    }
+    if (!body.volatility || body.volatility <= 0) {
+      return NextResponse.json({ error: "volatility is required and must be > 0" }, { status: 400 })
+    }
+    if (!body.days || body.days <= 0) {
+      return NextResponse.json({ error: "days is required and must be > 0" }, { status: 400 })
+    }
+    if (!body.num_simulations || body.num_simulations <= 0) {
+      return NextResponse.json({ error: "num_simulations is required and must be > 0" }, { status: 400 })
     }
 
     const result = runMonteCarlo(body.current_price, body.volatility, body.days, body.num_simulations)
-    return NextResponse.json(result, { status: 200 })
+
+    return NextResponse.json(result, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Simulation failed"
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
+export async function GET() {
+  return NextResponse.json({ message: "Use POST method with JSON body" }, { status: 405 })
+}
+
 export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200 })
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Origin": "*",
+    },
+  })
 }

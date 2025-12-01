@@ -42,19 +42,32 @@ export function RiskSimulator() {
     try {
       const response = await fetch("/api/simulate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(params),
       })
 
       if (!response.ok) {
-        const text = await response.text()
-        throw new Error(`HTTP ${response.status}: ${text}`)
+        let errorMessage = `HTTP ${response.status}`
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = `${response.status}: ${errorData.error}`
+          }
+        } catch {
+          const text = await response.text()
+          if (text) {
+            errorMessage = `${response.status}: ${text}`
+          }
+        }
+        throw new Error(errorMessage)
       }
 
-      const data = await response.json()
+      const data: SimulationData = await response.json()
       setSimData(data)
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Unknown error"
+      const errorMsg = err instanceof Error ? err.message : "Unknown error occurred"
       setError(errorMsg)
     } finally {
       setLoading(false)
